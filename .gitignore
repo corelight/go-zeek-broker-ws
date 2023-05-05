@@ -1,0 +1,6 @@
+.idea/
+cmd/
+example/example
+example/*.log
+tests/.tmp
+tests/.btest.failed.dat

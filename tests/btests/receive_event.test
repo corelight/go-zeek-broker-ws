@@ -1,0 +1,112 @@
+# @TEST-PORT: BROKER_WEB_SOCKET_PORT
+# @TEST-EXEC: btest-bg-run sender "zeek ../test.zeek > send.out"
+# @TEST-EXEC: go run test.go > receive.out
+# @TEST-EXEC: btest-bg-wait -k 10
+# @TEST-EXEC: btest-diff receive.out
+# @TEST-EXEC: btest-diff sender/send.out
+
+# @TEST-START-FILE test.zeek
+redef exit_only_after_terminate = T;
+redef check_for_unused_event_handlers = F;
+redef Broker::disable_ssl = T;
+
+global test_topic = "/topic/test";
+export {
+	type color: enum { Red = 10, White = 20, Blue = 30 };
+
+    global test: event(a1: bool, a2: int, a3: count, a4: double, a5: time, a6: interval, a7: string, a8: port,
+		a9: addr, a10: subnet, a11: color, a12: table[count] of string, a13: set[port], a14: vector of string);
+}
+
+event zeek_init()
+    {
+    Broker::listen_websocket("127.0.0.1", to_port(getenv("BROKER_WEB_SOCKET_PORT")));
+    }
+
+event Broker::peer_added(endpoint: Broker::EndpointInfo, msg: string)
+    {
+    local e = Broker::make_event(test,
+		T,
+		-42,
+		42,
+		3.14159,
+		double_to_time(1683001909),
+		3.5 min,
+		"hi",
+		6667/tcp,
+		1.2.3.4,
+		1.2.3.0/24,
+		White,
+		table(
+			[11] = "eleven",
+			[5] = "five",
+		),
+		set(21/tcp, 23/tcp, 80/tcp, 443/tcp),
+		vector("one", "two", "three"),
+	);
+	print(e);
+    Broker::publish(test_topic, e);
+    }
+
+event Broker::peer_lost(endpoint: Broker::EndpointInfo, msg: string)
+    {
+    terminate();
+    }
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE test.go
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strings"
+	"net"
+
+	"github.com/corelight/go-zeek-broker-ws/pkg/client"
+	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
+)
+
+func main() {
+	topic := "/topic/test"
+
+	portString := os.Getenv("BROKER_WEB_SOCKET_PORT")
+	if portString == "" {
+		panic("BROKER_WEB_SOCKET_PORT not set")
+	}
+
+	portString = strings.TrimSuffix(portString, "/tcp")
+
+	hostPort := fmt.Sprintf("127.0.0.1:%s", portString)
+
+	ctx := context.Background()
+
+	broker, err := client.NewClient(ctx, hostPort, false, []string{topic})
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = broker.Close()
+	}()
+
+    topic, event, err := broker.ReadEvent()
+    if err != nil {
+        panic(err)
+    }
+
+	fmt.Printf("topic=%s\nname=%s\n", topic, event.Name)
+	for i, arg := range event.Arguments {
+		switch arg.DataType {
+		case encoding.TypeSubnet:
+			 subnet := arg.DataValue.(*net.IPNet)
+		     fmt.Printf("a%d=encoding.Data{DataType:\"subnet\", DataValue:\"%s\"} // %s\n", i+1, subnet.String(), subnet.String())
+        default:
+			fmt.Printf("a%d=%#v // %v\n", i+1, arg, arg.DataValue)
+        }
+	}
+}
+
+# @TEST-END-FILE

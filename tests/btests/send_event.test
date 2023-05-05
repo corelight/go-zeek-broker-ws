@@ -1,0 +1,126 @@
+# @TEST-PORT: BROKER_WEB_SOCKET_PORT
+# @TEST-EXEC: btest-bg-run receiver "zeek ../test.zeek > receive.out"
+# @TEST-EXEC: go run test.go > send.out
+# @TEST-EXEC: btest-bg-wait -k 10
+# @TEST-EXEC: btest-diff send.out
+# @TEST-EXEC: btest-diff receiver/receive.out
+
+# @TEST-START-FILE test.zeek
+redef exit_only_after_terminate = T;
+redef check_for_unused_event_handlers = F;
+redef Broker::disable_ssl = T;
+
+global test_topic = "/topic/test";
+export {
+	type color: enum { Red = 10, White = 20, Blue = 30 };
+
+    global test: event(a1: bool, a2: int, a3: count, a4: double, a5: time, a6: interval, a7: string, a8: port, a9: addr, a10: subnet, a11: color, a12: table[count] of string, a13: set[port], a14: vector of string);
+
+}
+
+event test(a1: bool, a2: int, a3: count, a4: double, a5: time, a6: interval, a7: string, a8: port, a9: addr, a10: subnet, a11: color, a12: table[count] of string, a13: set[port], a14: vector of string)
+    {
+	print "a1", a1;
+	print "a2", a2;
+	print "a3", a3;
+	print "a4", a4;
+	print "a5", a5;
+	print "a6", a6;
+	print "a7", a7;
+	print "a8", a8;
+	print "a9", a9;
+	print "a10", a10;
+	print "a11", a11;
+	print "a12", a12;
+	print "a13", a13;
+	print "a14", a14;
+	terminate();
+    }
+
+event zeek_init()
+    {
+    Broker::listen_websocket("127.0.0.1", to_port(getenv("BROKER_WEB_SOCKET_PORT")));
+	Broker::subscribe(test_topic);
+    }
+
+event Broker::peer_lost(endpoint: Broker::EndpointInfo, msg: string)
+    {
+    terminate();
+    }
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE test.go
+package main
+
+import (
+	"context"
+	"fmt"
+	"net"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/corelight/go-zeek-broker-ws/pkg/client"
+	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
+)
+
+func main() {
+	topic := "/topic/test"
+
+	portString := os.Getenv("BROKER_WEB_SOCKET_PORT")
+	if portString == "" {
+		panic("BROKER_WEB_SOCKET_PORT not set")
+	}
+
+	portString = strings.TrimSuffix(portString, "/tcp")
+
+	hostPort := fmt.Sprintf("127.0.0.1:%s", portString)
+
+	broker, err := client.NewClient(context.Background(), hostPort, false, []string{})
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = broker.Close()
+	}()
+
+	_, subnet, err := net.ParseCIDR("1.2.3.0/24")
+	if err != nil {
+		panic(err)
+	}
+
+	err = broker.PublishEvent(topic, encoding.NewEvent(
+		"test",
+		encoding.Boolean(true),
+		encoding.Integer(-42),
+		encoding.Count(42),
+		encoding.Real(3.14159),
+		encoding.Timestamp(time.Date(2023, time.May, 2, 4, 31, 49, 0, time.UTC)),
+		encoding.Timespan(time.Duration(210000000000)), // 3m30s
+		encoding.String("hi"),
+		encoding.Port(encoding.Service{Port: 6667, Protocol: "tcp"}),
+		encoding.Address(net.ParseIP("1.2.3.4")),
+		encoding.Subnet(*subnet),
+		encoding.EnumValue("White"),
+		encoding.Table(map[encoding.Data]encoding.Data{
+			encoding.Count(11): encoding.String("eleven"),
+			encoding.Count(5):  encoding.String("five"),
+		}),
+		encoding.Set(map[encoding.Data]struct{}{
+			encoding.Port(encoding.Service{Port: 21, Protocol: "tcp"}):  {},
+			encoding.Port(encoding.Service{Port: 22, Protocol: "tcp"}):  {},
+			encoding.Port(encoding.Service{Port: 80, Protocol: "tcp"}):  {},
+			encoding.Port(encoding.Service{Port: 443, Protocol: "tcp"}): {},
+		}),
+		encoding.Vector(encoding.String("one"),encoding.String("two"),encoding.String("three")),
+	))
+
+	fmt.Println("Event sent")
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+# @TEST-END-FILE
