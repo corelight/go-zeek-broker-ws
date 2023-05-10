@@ -30,6 +30,6 @@ event Broker::peer_added(endpoint: Broker::EndpointInfo, msg: string)
 event Broker::peer_lost(endpoint: Broker::EndpointInfo, msg: string)
     {
     print "peer lost", endpoint;
-    #terminate();
+    terminate();
     }
 
