@@ -4,7 +4,9 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 
 	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
 	"github.com/gorilla/websocket"
@@ -35,17 +37,37 @@ func IsNormalWebsocketClose(err error) bool {
 	return true
 }
 
+// TLSDialFunc is a type alias for the function that us used by NewClient to make a TLS connection
+// when connecting to an HTTPS websocket (wss scheme) broker server.
+type TLSDailFunc func(ctx context.Context, network, addr string) (net.Conn, error)
+
+// ErrTLSDailFuncNotProvided is returned by NewClient if secure is True but no TLSDailFunc is provided.
+var ErrTLSDailFuncNotProvided = errors.New("a TLSDailFunc must be provided in secure mode")
+
 // NewClient constructs a new websocket client to connect to the endpoint specified,
-// subscribing to topics (which may be an empty list).
-func NewClient(ctx context.Context, hostPort string, secure bool, topics []string) (*Client, error) {
+// subscribing to topics (which may be an empty list). If secure is False, then TLS must be turned off
+// for the broker websocket server in zeek (using "redef Broker::disable_ssl = T;"). If secure is True,
+// then a TLS dial function agument (tlsDialFunc) must be provided. For the default broker configuration
+// (which disables TLS verification), use weirdtls.BrokerDefaultTLSDialer. When broker is configured with certificates,
+// the securetls.MakeSecureDialer() function returns a dialer function that uses a provided CA and client
+// certificate/key that is loaded from PEM files. The dial function may be nil if secure is False (if not nil,
+// it will be ignored).
+func NewClient(ctx context.Context, hostPort string, secure bool,
+	tlsDialFunc TLSDailFunc, topics []string) (*Client, error) {
 	scheme := "ws"
+	dialer := websocket.DefaultDialer
+
 	if secure {
+		if tlsDialFunc == nil {
+			return nil, ErrTLSDailFuncNotProvided
+		}
+		dialer.NetDialTLSContext = tlsDialFunc
 		scheme = "wss"
 	}
 
 	url := fmt.Sprintf("%s://%s/v1/messages/json", scheme, hostPort)
 
-	c, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
+	c, _, err := dialer.DialContext(ctx, url, nil)
 	if err != nil {
 		return nil, err
 	}

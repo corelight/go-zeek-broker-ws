@@ -1,12 +1,16 @@
 # @TEST-PORT: BROKER_WEB_SOCKET_PORT
-# @TEST-EXEC: btest-bg-run sender "zeek ../test.zeek > send.out"
-# @TEST-EXEC: go run test.go > receive.out
+# @TEST-EXEC: btest-bg-run sender "SSL_CAFILE=${FILES}/minica.pem SSL_CERTIFICATE=${FILES}/cert.pem SSL_KEYFILE=${FILES}/key.pem zeek ../test.zeek > send.out"
+# @TEST-EXEC: SSL_CAFILE=${FILES}/minica.pem SSL_CERTIFICATE=${FILES}/cert.pem SSL_KEYFILE=${FILES}/key.pem go run test.go > receive.out
 # @TEST-EXEC: btest-bg-wait -k 10
 # @TEST-EXEC: btest-diff receive.out
 # @TEST-EXEC: btest-diff sender/send.out
 
 # @TEST-START-FILE test.zeek
 redef exit_only_after_terminate = T;
+
+redef Broker::ssl_cafile = getenv("SSL_CAFILE");
+redef Broker::ssl_certificate = getenv("SSL_CERTIFICATE");
+redef Broker::ssl_keyfile = getenv("SSL_KEYFILE");
 
 global test_topic = "/topic/test";
 export {
@@ -66,7 +70,7 @@ import (
 
 	"github.com/corelight/go-zeek-broker-ws/pkg/client"
 	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
-	"github.com/corelight/go-zeek-broker-ws/pkg/weirdtls"
+	"github.com/corelight/go-zeek-broker-ws/pkg/securetls"
 )
 
 func main() {
@@ -79,11 +83,13 @@ func main() {
 
 	portString = strings.TrimSuffix(portString, "/tcp")
 
-	hostPort := fmt.Sprintf("127.0.0.1:%s", portString)
+	hostPort := fmt.Sprintf("localhost:%s", portString)
 
 	ctx := context.Background()
 
-	broker, err := client.NewClient(ctx, hostPort, true, weirdtls.BrokerDefaultTLSDialer, []string{topic})
+	dialFunc := securetls.MakeSecureDialer(os.Getenv("SSL_CAFILE"), os.Getenv("SSL_CERTIFICATE"), os.Getenv("SSL_KEYFILE"))
+
+	broker, err := client.NewClient(ctx, hostPort, true, dialFunc, []string{topic})
 	if err != nil {
 		panic(err)
 	}

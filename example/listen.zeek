@@ -1,5 +1,4 @@
 redef exit_only_after_terminate = T;
-redef Broker::disable_ssl = T;
 
 global test_topic = "/topic/test";
 

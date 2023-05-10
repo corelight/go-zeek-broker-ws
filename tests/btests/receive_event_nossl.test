@@ -7,6 +7,7 @@
 
 # @TEST-START-FILE test.zeek
 redef exit_only_after_terminate = T;
+redef Broker::disable_ssl = T;
 
 global test_topic = "/topic/test";
 export {
@@ -66,7 +67,6 @@ import (
 
 	"github.com/corelight/go-zeek-broker-ws/pkg/client"
 	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
-	"github.com/corelight/go-zeek-broker-ws/pkg/weirdtls"
 )
 
 func main() {
@@ -83,7 +83,7 @@ func main() {
 
 	ctx := context.Background()
 
-	broker, err := client.NewClient(ctx, hostPort, true, weirdtls.BrokerDefaultTLSDialer, []string{topic})
+	broker, err := client.NewClient(ctx, hostPort, false, nil, []string{topic})
 	if err != nil {
 		panic(err)
 	}

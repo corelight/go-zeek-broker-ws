@@ -83,6 +83,22 @@ as a wrapper of `client.Client`, or a new/replacement implementation that uses t
 Similarly, asynchronous handling and dispatching of events received via subscriptions would best implemented as
 a `Client.ReadEvent()` wrapper.
 
+## Broker TLS details
+
+Broker network connections (both native, and the websocket interface) enable TLS by default with an odd configuration
+that disables host verification and selects a set of cipher that allow encryption without certificates. To use this mode
+requires passing `weirdtls.BrokerDefaultTLSDialer` as the dailer function argument to `encoding.NewClient`. Note that
+this pulls in OpenSSL as a dependency.
+
+Alternatively the standard library `crypto/tls` implementation can be used if both sides (the client and zeek/broker)
+is configured to use TLS with certificates. This library provides a convenient helper function 
+(`securetls.MakeSecureDialer()`) that returns a dialer function given PEM files for the CA and client certificate/key. 
+See [this btest case](tests/btests/receive_event_certs.test) for an example of this configuration.
+
+Finally, TLS can be turned off for broker connections using `redef Broker::disable_ssl = T;`. 
+See [this btest case](tests/btests/receive_event_nossl.test) for an example where `encoding.NewClient` is called
+with arguments for insecure operation.
+
 ## Ping/pong example
 
 Running a zeek-side broker script:

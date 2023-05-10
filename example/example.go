@@ -13,6 +13,7 @@ import (
 
 	"github.com/corelight/go-zeek-broker-ws/pkg/client"
 	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
+	"github.com/corelight/go-zeek-broker-ws/pkg/weirdtls"
 	"github.com/gorilla/websocket"
 )
 
@@ -22,7 +23,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	broker, err := client.NewClient(ctx, "localhost:9997", false, []string{topic})
+	broker, err := client.NewClient(ctx, "localhost:9997",
+		true, weirdtls.BrokerDefaultTLSDialer, []string{topic})
 	if err != nil {
 		log.Fatal(err)
 	}
