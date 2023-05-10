@@ -1,6 +1,5 @@
 redef exit_only_after_terminate = T;
 redef Broker::disable_ssl = T;
-redef Broker::default_listen_address_websocket = "0.0.0.0";
 
 global test_topic = "/topic/test";
 
