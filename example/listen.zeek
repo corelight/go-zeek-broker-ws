@@ -1,5 +1,4 @@
 redef exit_only_after_terminate = T;
-redef check_for_unused_event_handlers = F;
 redef Broker::disable_ssl = T;
 redef Broker::default_listen_address_websocket = "0.0.0.0";
 
