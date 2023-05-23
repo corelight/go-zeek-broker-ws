@@ -3,6 +3,7 @@
 package encoding
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -92,12 +93,12 @@ func (d *Data) decode(rawDataPtr *map[string]interface{}) error {
 		return err
 	}
 
-	var floatValue float64
+	var numberValue json.Number
 	if d.DataType == TypeReal || d.DataType == TypeInteger || d.DataType == TypeCount {
-		floatValue, ok = v.(float64)
+		numberValue, ok = v.(json.Number)
 		if !ok {
-			return fmt.Errorf("expected Count type to be serialized as JSON number but got type %T value %v",
-				floatValue, floatValue)
+			return fmt.Errorf("expected %s type to be serialized as JSON number but got type %T value %v",
+				d.DataType.String(), v, v)
 		}
 	}
 
@@ -131,22 +132,27 @@ func (d *Data) decode(rawDataPtr *map[string]interface{}) error {
 		}
 		d.DataValue = nil
 	case TypeReal:
-		d.DataValue = floatValue
+		f, err := numberValue.Float64()
+		if err != nil {
+			return fmt.Errorf("problem converting Real type to float64: %w", err)
+		}
+		d.DataValue = f
 	case TypeString:
 		fallthrough
 	case TypeEnumValue:
 		d.DataValue = stringValue
 	case TypeCount:
-		if floatValue < 0 {
-			return fmt.Errorf("expected Count type to a positive JSON number but got %f", floatValue)
+		i, err := strconv.ParseUint(numberValue.String(), 10, 64)
+		if err != nil {
+			return fmt.Errorf("problem converting Count type to uint64: %w", err)
 		}
-		d.DataValue = uint64(floatValue)
+		d.DataValue = i
 	case TypeInteger:
-		if floatValue > math.MaxInt64 || floatValue < math.MinInt64 {
-			return fmt.Errorf("JSON number value of %f is out of range for an Integer type [%d, %d]",
-				floatValue, math.MinInt64, math.MaxInt64)
+		i, err := numberValue.Int64()
+		if err != nil {
+			return fmt.Errorf("problem converting Integer type to int64: %w", err)
 		}
-		d.DataValue = int64(floatValue)
+		d.DataValue = i
 	case TypeTimespan:
 		if strings.HasSuffix(stringValue, "min") {
 			stringValue = stringValue[:len(stringValue)-2]
@@ -299,7 +305,11 @@ func (d *Data) decode(rawDataPtr *map[string]interface{}) error {
 // which is then passed to Data.decode() which does the heavy lifting.
 func (d *Data) UnmarshalJSON(b []byte) error {
 	var rawData map[string]interface{}
-	if err := json.Unmarshal(b, &rawData); err != nil {
+
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+
+	if err := dec.Decode(&rawData); err != nil {
 		return err
 	}
 
