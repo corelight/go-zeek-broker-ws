@@ -176,16 +176,62 @@ func (d *DataMessage) GetEvent() (topic string, evt Event, err error) {
 
 	topic = d.Topic
 
-	if len(sig) == eventSignatureVectorLen {
-		if sig[1].DataType != TypeVector {
-			return "", Event{},
-				fmt.Errorf("event arguments has invalid type (%s)", sig[1].DataType.String())
+	if len(sig) < eventSignatureVectorLen {
+		return "", Event{}, fmt.Errorf("event has too few signature elements")
+	}
+
+	if sig[1].DataType != TypeVector {
+		return "", Event{},
+			fmt.Errorf("event arguments has invalid type (%s)", sig[1].DataType.String())
+	}
+
+	evt.Arguments, ok = sig[1].DataValue.([]Data)
+	if !ok {
+		return "", Event{}, fmt.Errorf("event arguments has invalid type")
+	}
+
+	if len(sig) > eventSignatureVectorLen {
+		if sig[2].DataType != TypeVector {
+			return "", Event{}, fmt.Errorf("event metadata has invalid encoded type (%s)", sig[2].DataType.String())
 		}
 
-		evt.Arguments, ok = sig[1].DataValue.([]Data)
-		if !ok {
-			return "", Event{}, fmt.Errorf("event arguments has invalid type")
+		metadata, typeOk := sig[2].DataValue.([]Data)
+		if !typeOk {
+			return "", Event{}, fmt.Errorf("event metadata has invalid parsed type (%T)", metadata)
 		}
+
+		metaList := make([]EventMetaEntry, len(metadata))
+		for i, metadataEntry := range metadata {
+			if metadataEntry.DataType != TypeVector {
+				return "", Event{}, fmt.Errorf("event metadata entry %d has invalid encoded type (%s)",
+					i, metadataEntry.DataType.String())
+			}
+
+			entryVector, typeOkOk := metadataEntry.DataValue.([]Data)
+			if !typeOkOk {
+				return "", Event{}, fmt.Errorf("event metadata entry %d has invalid parsed type (%T)", i, metadata)
+			}
+
+			if len(entryVector) != 2 {
+				return "", Event{}, fmt.Errorf("event metadata entry %d has incorrect length %d",
+					i, len(entryVector))
+			}
+
+			if entryVector[0].DataType != TypeCount {
+				return "", Event{}, fmt.Errorf("event metadata entry %d type ID has invalid encoded type (%s)",
+					i, entryVector[0].DataType.String())
+			}
+
+			entryTypeID, typeOkOk := entryVector[0].DataValue.(uint64)
+			if !typeOkOk {
+				return "", Event{}, fmt.Errorf("event metadata entry %d type ID has invalid parsed type (%T)",
+					i, metadata)
+			}
+
+			metaList[i].ID = entryTypeID
+			metaList[i].Value = entryVector[1]
+		}
+		evt.Metadata = metaList
 	}
 
 	return
