@@ -77,11 +77,11 @@ if !ok {
 // now we use stringArgument0
 ```
 
+Asynchronous handling and dispatching of events received via subscriptions would best implemented as
+a `Client.ReadEvent()` wrapper. A simple implementation is provided in `client.AsyncSubscription()`.
+
 More advanced handling of the websocket connection (e.g., setting timeouts, handling re-connection, etc.) is best implemented
 as a wrapper of `client.Client`, or a new/replacement implementation that uses the `encoding` package (contributions/PRs are welcome!).
-
-Similarly, asynchronous handling and dispatching of events received via subscriptions would best implemented as
-a `Client.ReadEvent()` wrapper.
 
 ## Broker TLS details
 
