@@ -39,10 +39,10 @@ func IsNormalWebsocketClose(err error) bool {
 
 // TLSDialFunc is a type alias for the function that us used by NewClient to make a TLS connection
 // when connecting to an HTTPS websocket (wss scheme) broker server.
-type TLSDailFunc func(ctx context.Context, network, addr string) (net.Conn, error)
+type TLSDialFunc func(ctx context.Context, network, addr string) (net.Conn, error)
 
 // ErrTLSDailFuncNotProvided is returned by NewClient if secure is True but no TLSDailFunc is provided.
-var ErrTLSDailFuncNotProvided = errors.New("a TLSDailFunc must be provided in secure mode")
+var ErrTLSDialFuncNotProvided = errors.New("a TLSDialFunc must be provided in secure mode")
 
 // NewClient constructs a new websocket client to connect to the endpoint specified,
 // subscribing to topics (which may be an empty list). If secure is False, then TLS must be turned off
@@ -53,13 +53,13 @@ var ErrTLSDailFuncNotProvided = errors.New("a TLSDailFunc must be provided in se
 // certificate/key that is loaded from PEM files. The dial function may be nil if secure is False (if not nil,
 // it will be ignored).
 func NewClient(ctx context.Context, hostPort string, secure bool,
-	tlsDialFunc TLSDailFunc, topics []string) (*Client, error) {
+	tlsDialFunc TLSDialFunc, topics []string) (*Client, error) {
 	scheme := "ws"
 	dialer := websocket.DefaultDialer
 
 	if secure {
 		if tlsDialFunc == nil {
-			return nil, ErrTLSDailFuncNotProvided
+			return nil, ErrTLSDialFuncNotProvided
 		}
 		dialer.NetDialTLSContext = tlsDialFunc
 		scheme = "wss"
