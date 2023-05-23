@@ -111,7 +111,7 @@ Now run the example:
 ```console
 $ cd example/
 $ go build && ./example 
-2023/05/05 12:56:55 connected to remote endpoint with UUID=c9b0bfd6-3b8d-5de2-a51c-9af7b81aaad3 version=c9b0bfd6-3b8d-5de2-a51c-9af7b81aaad3
+2023/05/05 12:56:55 connected to remote endpoint with UUID=c9b0bfd6-3b8d-5de2-a51c-9af7b81aaad3 version=2.5.0-dev
 2023/05/05 12:56:55 > topic=/topic/test | event ping("my-message": string, "1": count)
 2023/05/05 12:56:55 < topic=/topic/test | event pong("my-message": string, "2": count)
 2023/05/05 12:56:56 > topic=/topic/test | event ping("my-message": string, "2": count)
