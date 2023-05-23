@@ -88,7 +88,7 @@ func NewClient(ctx context.Context, hostPort string, secure bool,
 		topics:          topics,
 		ctx:             ctx,
 		endpointUUID:    ack.EndpointUUID,
-		endpointVersion: ack.EndpointUUID,
+		endpointVersion: ack.Version,
 	}, nil
 }
 
