@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
+	"github.com/gorilla/websocket"
 )
 
 type EventHandler func(topic string, event encoding.Event)
@@ -29,9 +30,18 @@ func AsyncSubscription(ctx context.Context, broker *Client, hm EventHandler, eh 
 				topic, evt, err := broker.ReadEvent()
 
 				if err != nil {
-					if IsNormalWebsocketClose(err) {
+					e, ok := err.(*websocket.CloseError) //nolint:errorlint //oh shush
+					if ok {
+						// Normal EOF close
+						if e.Code == websocketNormalEOFCode {
+							return
+						}
+
+						// Abnormal websocket error, pass to handler then exit
+						eh(err)
 						return
 					}
+
 					//nolint:errorlint //oh shush
 					if opErr, ok := err.(*net.OpError); ok && opErr.Err.Error() == "use of closed network connection" {
 						return
