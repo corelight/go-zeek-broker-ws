@@ -116,6 +116,9 @@ func (c *Client) RemoteEndpointInfo() (uuid string, version string) {
 
 // Close closes the underlying websocket connection.
 func (c *Client) Close() error {
+	if c == nil {
+		return errors.New("closing nil client")
+	}
 	if c.conn == nil {
 		return errors.New("connection not open")
 	}
