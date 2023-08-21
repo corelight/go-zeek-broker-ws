@@ -1,0 +1,22 @@
+name: Test
+on:
+  pull_request:
+  push:
+    branches: [master]
+jobs:
+  btests:
+    runs-on: ubuntu-latest
+    container: zeek/zeek-dev:latest
+    steps:
+        - name: Checkout Project
+          uses: actions/checkout@v3
+
+        - name: Install Golang and build deps
+          run: | 
+            apt-get update
+            apt-get install golang libssl-dev -y    
+
+        - name: Run btests
+          run: |
+            cd $GITHUB_WORKSPACE/tests
+            btest -v -D
