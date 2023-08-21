@@ -5,8 +5,13 @@ on:
     branches: [master]
 jobs:
   btests:
+    name: Run btests on ${{ matrix.zeek_container }}
     runs-on: ubuntu-latest
-    container: zeek/zeek-dev:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zeek_container: ["zeek/zeek:lts", "zeek/zeek:latest", "zeek/zeek-dev:latest"]
+    container: ${{ matrix.zeek_container }}
     steps:
         - name: Checkout Project
           uses: actions/checkout@v3
