@@ -1,0 +1,15 @@
+name: Audit
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    # Also run 2:37 PM every day
+    - cron: '37 14 * * *'
+jobs:
+  govulncheck_job:
+    runs-on: ubuntu-latest
+    name: Run govulncheck
+    steps:
+      - id: govulncheck
+        uses: golang/govulncheck-action@v1
