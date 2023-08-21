@@ -1,4 +1,4 @@
-# @TEST-PORT: BROKER_WEB_SOCKET_PORT
+# @TEST-PORT: BTEST_BROKER_WEB_SOCKET_PORT
 # @TEST-EXEC: btest-bg-run receiver "zeek ../test.zeek > receive.out"
 # @TEST-EXEC: go run test.go > send.out
 # @TEST-EXEC: btest-bg-wait -k 10
@@ -37,7 +37,7 @@ event test(a1: bool, a2: int, a3: count, a4: double, a5: time, a6: interval, a7:
 
 event zeek_init()
     {
-    Broker::listen_websocket("127.0.0.1", to_port(getenv("BROKER_WEB_SOCKET_PORT")));
+    Broker::listen_websocket("127.0.0.1", to_port(getenv("BTEST_BROKER_WEB_SOCKET_PORT")));
 	Broker::subscribe(test_topic);
     }
 
@@ -67,9 +67,9 @@ import (
 func main() {
 	topic := "/topic/test"
 
-	portString := os.Getenv("BROKER_WEB_SOCKET_PORT")
+	portString := os.Getenv("BTEST_BROKER_WEB_SOCKET_PORT")
 	if portString == "" {
-		panic("BROKER_WEB_SOCKET_PORT not set")
+		panic("BTEST_BROKER_WEB_SOCKET_PORT not set")
 	}
 
 	portString = strings.TrimSuffix(portString, "/tcp")
