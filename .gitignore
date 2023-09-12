@@ -4,3 +4,4 @@ example/example
 example/*.log
 tests/.tmp
 tests/.btest.failed.dat
+tests/Files/minica-key.pem
