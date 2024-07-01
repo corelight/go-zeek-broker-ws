@@ -138,6 +138,6 @@ func Table(value map[Data]Data) Data {
 func None() Data {
 	return Data{
 		DataType:  TypeNone,
-		DataValue: nil,
+		DataValue: make(map[string]interface{}),
 	}
 }
