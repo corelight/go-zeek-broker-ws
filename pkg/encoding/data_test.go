@@ -3,6 +3,7 @@
 package encoding
 
 import (
+	"bytes"
 	"net"
 	"reflect"
 	"testing"
@@ -391,5 +392,24 @@ func Test_formatTimespan(t *testing.T) {
 				t.Errorf("formatTimespan() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_encodeHTMLEntity(t *testing.T) {
+	stringWithHTMLEntity := Data{
+		DataType:  TypeString,
+		DataValue: "<ohai>",
+	}
+
+	want := []byte(`{"@data-type":"string","data":"<ohai>"}`)
+
+	buf, err := stringWithHTMLEntity.MarshalJSON()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(buf, want) != 0 {
+		t.Errorf("expected %s got %s", want, buf)
 	}
 }
