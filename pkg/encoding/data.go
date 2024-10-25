@@ -373,10 +373,18 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 			"data":       fmt.Sprintf("%d/%s", serv.Port, serv.Protocol.String()),
 		})
 	default:
-		return json.Marshal(map[string]interface{}{
+		buf := &bytes.Buffer{}
+		enc := json.NewEncoder(buf)
+		enc.SetEscapeHTML(false)
+
+		if err := enc.Encode(map[string]interface{}{
 			"@data-type": d.DataType,
 			"data":       d.DataValue,
-		})
+		}); err != nil {
+			return nil, err
+		}
+
+		return buf.Bytes(), nil
 	}
 }
 
