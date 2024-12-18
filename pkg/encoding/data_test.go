@@ -401,7 +401,7 @@ func Test_encodeHTMLEntity(t *testing.T) {
 		DataValue: "<ohai>",
 	}
 
-	want := []byte(`{"@data-type":"string","data":"<ohai>"}`)
+	want := []byte(`{"@data-type":"string","data":"<ohai>"}` + "\n")
 
 	buf, err := stringWithHTMLEntity.MarshalJSON()
 
