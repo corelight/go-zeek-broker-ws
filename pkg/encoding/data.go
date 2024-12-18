@@ -372,6 +372,8 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 			"@data-type": d.DataType,
 			"data":       fmt.Sprintf("%d/%s", serv.Port, serv.Protocol.String()),
 		})
+	case TypeNone:
+		return []byte(`{"@data-type":"none","data":{}}`), nil
 	default:
 		buf := &bytes.Buffer{}
 		enc := json.NewEncoder(buf)

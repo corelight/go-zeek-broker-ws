@@ -325,7 +325,7 @@ func TestData_Event(t *testing.T) {
 func TestData_None(t *testing.T) {
 	wantData := Data{
 		DataType:  "none",
-		DataValue: make(map[string]interface{}),
+		DataValue: nil,
 	}
 
 	gotData := None()

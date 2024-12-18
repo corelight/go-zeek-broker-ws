@@ -413,3 +413,22 @@ func Test_encodeHTMLEntity(t *testing.T) {
 		t.Errorf("expected %s got %s", want, buf)
 	}
 }
+
+func Test_None(t *testing.T) {
+	none := Data{
+		DataType:  TypeNone,
+		DataValue: nil,
+	}
+
+	want := []byte(`{"@data-type":"none","data":{}}`)
+
+	buf, err := none.MarshalJSON()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(buf, want) != 0 {
+		t.Errorf("expected %s got %s", want, buf)
+	}
+}
