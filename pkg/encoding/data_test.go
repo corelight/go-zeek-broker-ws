@@ -401,9 +401,28 @@ func Test_encodeHTMLEntity(t *testing.T) {
 		DataValue: "<ohai>",
 	}
 
-	want := []byte(`{"@data-type":"string","data":"<ohai>"}`)
+	want := []byte(`{"@data-type":"string","data":"<ohai>"}` + "\n")
 
 	buf, err := stringWithHTMLEntity.MarshalJSON()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(buf, want) != 0 {
+		t.Errorf("expected %s got %s", want, buf)
+	}
+}
+
+func Test_None(t *testing.T) {
+	none := Data{
+		DataType:  TypeNone,
+		DataValue: nil,
+	}
+
+	want := []byte(`{"@data-type":"none","data":{}}`)
+
+	buf, err := none.MarshalJSON()
 
 	if err != nil {
 		t.Fatal(err)
