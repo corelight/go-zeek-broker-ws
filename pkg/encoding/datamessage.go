@@ -3,6 +3,7 @@
 package encoding
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -26,12 +27,20 @@ func (e DataMessageUnknownTypeError) Error() string {
 
 // MarshalJSON implements the Marshaler interface for DataMessage.
 func (d DataMessage) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+
+	if err := enc.Encode(map[string]interface{}{
 		"type":       d.ConstType,
 		"topic":      d.Topic,
 		"@data-type": d.Data.DataType,
 		"data":       d.Data.DataValue,
-	})
+	}); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
 // UnmarshalJSON implements the Unmarshaler interface for DataMessage
