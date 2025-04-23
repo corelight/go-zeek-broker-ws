@@ -1,0 +1,9 @@
+#!/bin/sh
+# Test if Zeek used has support for Cluster::listen_websocket()
+
+if ! command -v zeek >/dev/null; then
+    echo "No zeek in PATH!" >&2
+    # fall through
+fi
+
+exec zeek -b -e 'global x: Cluster::WebSocketServerOptions' 2>/dev/null
