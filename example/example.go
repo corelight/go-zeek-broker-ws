@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -18,13 +19,16 @@ import (
 )
 
 func main() {
+	insecure := flag.Bool("insecure", false, "Disable TLS")
 	topic := "/topic/test"
 	event := "ping"
+
+	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	broker, err := client.NewClient(ctx, "localhost:9997",
-		true, weirdtls.BrokerDefaultTLSDialer, []string{topic})
+		!(*insecure), weirdtls.BrokerDefaultTLSDialer, []string{topic})
 	if err != nil {
 		log.Fatal(err)
 	}
