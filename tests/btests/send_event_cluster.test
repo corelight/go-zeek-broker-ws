@@ -42,7 +42,6 @@ import (
 
 	"github.com/corelight/go-zeek-broker-ws/pkg/client"
 	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
-	"github.com/corelight/go-zeek-broker-ws/pkg/weirdtls"
 )
 
 func main() {
@@ -57,7 +56,7 @@ func main() {
 
 	hostPort := fmt.Sprintf("127.0.0.1:%s", portString)
 
-	broker, err := client.NewClient(context.Background(), hostPort, false, weirdtls.BrokerDefaultTLSDialer, []string{})
+	broker, err := client.NewClient(context.Background(), hostPort, false, nil, []string{})
 	if err != nil {
 		panic(err)
 	}
