@@ -86,9 +86,9 @@ as a wrapper of `client.Client`, or a new/replacement implementation that uses t
 ## Broker TLS details
 
 Broker network connections (both native, and the websocket interface) enable TLS by default with an odd configuration
-that disables host verification and selects a set of cipher that allow encryption without certificates. To use this mode
-requires passing `weirdtls.BrokerDefaultTLSDialer` as the dailer function argument to `encoding.NewClient`. Note that
-this pulls in OpenSSL as a dependency.
+that disables host verification and selects a set of cipher that allow encryption without certificates (Anonymous Diffie-Hellman
+/ AECDH). To use this mode requires passing `weirdtls.BrokerDefaultTLSDialer` as the dailer function argument to `encoding.NewClient`.
+Note that this pulls in OpenSSL as a dependency.
 
 Alternatively the standard library `crypto/tls` implementation can be used if both sides (the client and zeek/broker)
 is configured to use TLS with certificates. This library provides a convenient helper function 
@@ -98,6 +98,15 @@ See [this btest case](tests/btests/receive_event_certs.test) for an example of t
 Finally, TLS can be turned off for broker connections using `redef Broker::disable_ssl = T;`. 
 See [this btest case](tests/btests/receive_event_nossl.test) for an example where `encoding.NewClient` is called
 with arguments for insecure operation.
+
+### Changes in zeek 7.2+
+
+In zeek 7.2 the websocket API will be moved out of broker into the `Cluster` framework, and the default is to turn off
+TLS. This [btest case](tests/btests/send_event_cluster.test) uses the new zeek-side functions and demonstrates using
+this library by calling `encoding.NewClient()` with the `secure` argument set to false.
+
+When zeek 7.2 becomes the LTS release, a new (major) version of this library will drop support for the AECDH TLS mode
+described in the above section, removing the OpenSSL dependency.
 
 ## Ping/pong example
 

@@ -1,0 +1,79 @@
+# @TEST-REQUIRES: have-cluster-websocket
+# @TEST-PORT: BTEST_BROKER_WEB_SOCKET_PORT
+# @TEST-EXEC: zeek --parse-only ./test.zeek
+# @TEST-EXEC: btest-bg-run receiver "zeek ../test.zeek > receive.out"
+# @TEST-EXEC: go run test.go > send.out
+# @TEST-EXEC: btest-bg-wait -k 10
+# @TEST-EXEC: btest-diff send.out
+# @TEST-EXEC: btest-diff receiver/receive.out
+
+# @TEST-START-FILE test.zeek
+redef exit_only_after_terminate = T;
+
+global test_topic = "/topic/test";
+export {
+    type color: enum { Red = 10, White = 20, Blue = 30 };
+
+    global test: event(a1: bool);
+}
+
+event test(a1: bool)
+    {
+    print "a1", a1;
+    terminate();
+    }
+
+event zeek_init()
+    {
+    Cluster::listen_websocket([$listen_host="127.0.0.1", $listen_port=to_port(getenv("BTEST_BROKER_WEB_SOCKET_PORT"))]);
+    Cluster::subscribe(test_topic);
+    }
+
+# @TEST-END-FILE
+
+# @TEST-START-FILE test.go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/corelight/go-zeek-broker-ws/pkg/client"
+	"github.com/corelight/go-zeek-broker-ws/pkg/encoding"
+)
+
+func main() {
+	topic := "/topic/test"
+
+	portString := os.Getenv("BTEST_BROKER_WEB_SOCKET_PORT")
+	if portString == "" {
+		panic("BTEST_BROKER_WEB_SOCKET_PORT not set")
+	}
+
+	portString = strings.TrimSuffix(portString, "/tcp")
+
+	hostPort := fmt.Sprintf("127.0.0.1:%s", portString)
+
+	broker, err := client.NewClient(context.Background(), hostPort, false, nil, []string{})
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = broker.Close()
+	}()
+
+	err = broker.PublishEvent(topic, encoding.NewEvent(
+		"test",
+		encoding.Boolean(true),
+	))
+
+	fmt.Println("Event sent")
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+# @TEST-END-FILE
